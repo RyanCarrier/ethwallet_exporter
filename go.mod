@@ -2,7 +2,10 @@ module github.com/RyanCarrier/ethwallet_exporter
 
 go 1.17
 
-require github.com/ethereum/go-ethereum v1.10.12
+require (
+	github.com/ethereum/go-ethereum v1.10.12
+	github.com/wealdtech/go-ens/v3 v3.5.1
+)
 
 require (
 	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
@@ -27,7 +30,6 @@ require (
 	github.com/shirou/gopsutil v3.21.5+incompatible // indirect
 	github.com/tklauser/go-sysconf v0.3.6 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
-	github.com/wealdtech/go-ens/v3 v3.5.1 // indirect
 	github.com/wealdtech/go-multicodec v1.4.0 // indirect
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d // indirect
