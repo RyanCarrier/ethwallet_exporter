@@ -22,82 +22,90 @@ type TokenData struct {
 	LogoURI     string `json:"logoURI"`
 }
 type Address struct {
-	name    string
-	address common.Address
+	name     string
+	address  common.Address
+	balances []Balance
 }
 
 type Balance struct {
-	Address
 	balance string
 	token   TokenData
 	symbol  string
 }
 
 func walletLoop() {
+	i := cacheTicks
 	for range time.Tick(refreshDuration) {
-		refreshBalances()
+		if i >= cacheTicks {
+			refreshAllTokens()
+			i = 0
+		} else {
+			refreshKnownBalances()
+			i++
+		}
 	}
 }
 
-func refreshBalances() {
-	fmt.Printf("Refreshing %d addresses and %d balances... ", len(addressList), len(balanceList))
+func refreshKnownBalances() {
 	start := time.Now()
-	refreshAddressBalances()
-	for i, v := range balanceList {
-		if (v.token == TokenData{}) {
-			balanceList[i].balance = GetBalance(v.address).String()
-		} else {
-			balanceList[i].balance = getTokenBalance(v.token, v.address).String()
+	total := 0
+	for i, v := range addressList {
+		for j, jv := range v.balances {
+			if (jv.token == TokenData{}) {
+				addressList[i].balances[j].balance = getEthBalance(v.address).String()
+			} else {
+				addressList[i].balances[j].balance = getTokenBalance(jv.token, v.address).String()
+			}
 		}
-
+		total += len(v.balances)
 	}
 	lastRefresh = time.Since(start)
-	fmt.Printf(" Completed (%s)\n", lastRefresh)
+	fmt.Printf("Refreshed %d addresses (%d balances) (%s)\n", len(addressList), total, lastRefresh)
+}
+
+func refreshAllTokens() {
+	start := time.Now()
+	for i, v := range addressList {
+		addressList[i].balances = []Balance{{symbol: "ETH", balance: getEthBalance(v.address).String()}}
+		for _, jv := range tokenList {
+			bal := getTokenBalance(jv, v.address)
+			if bal.Cmp(big.NewFloat(0)) != 0 {
+				addressList[i].balances = append(addressList[i].balances, Balance{token: jv, symbol: jv.Symbol, balance: bal.String()})
+			}
+		}
+	}
+	lastRefresh = time.Since(start)
+	fmt.Printf("Refreshed %d addresses and scanned for %d tokens (%s)\n", len(addressList), len(tokenList), lastRefresh)
+}
+
+func getEthBalance(address common.Address) *big.Float {
+	balance, err := client.BalanceAt(context.Background(), address, nil)
+	if err != nil {
+		fmt.Printf("Error fetching balance (%v)\n", address)
+	}
+	return weiToEther(balance)
 }
 
 func getTokenBalance(token TokenData, address common.Address) *big.Float {
 	caller, err := NewTokenCaller(token.realAddress, client)
 	if err != nil {
 		fmt.Println("Err on token address: ", token.realAddress)
-		return nil
+		return big.NewFloat(0)
 	}
-
 	balance, err := caller.BalanceOf(nil, address)
 	if err != nil {
 		fmt.Println("Err on token address: ", token.realAddress)
-		return nil
+		return big.NewFloat(0)
 	}
-	return IntToDec(balance, token.Decimals)
+	return intToDec(balance, token.Decimals)
 }
 
-func refreshAddressBalances() {
-	newBalances := []Balance{}
-	for _, v := range addressList {
-		newBalances = append(newBalances, Balance{Address: v, symbol: "ETH"})
-		for _, jv := range tokenList {
-			bal := getTokenBalance(jv, v.address)
-			if bal.Cmp(big.NewFloat(0)) != 0 {
-				newBalances = append(newBalances, Balance{Address: v, token: jv, symbol: jv.Symbol})
-			}
-		}
-	}
-	balanceList = newBalances
-}
-
-func GetBalance(address common.Address) *big.Float {
-	balance, err := client.BalanceAt(context.Background(), address, nil)
-	if err != nil {
-		fmt.Printf("Error fetching balance (%v)\n", address)
-	}
-	return WeiToEther(balance)
-}
-
-func IntToDec(u *big.Int, decimal uint8) *big.Float {
+func intToDec(u *big.Int, decimal uint8) *big.Float {
 	return new(big.Float).Quo(new(big.Float).SetInt(u),
 		new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil)))
 }
 
-func WeiToEther(wei *big.Int) *big.Float {
+func weiToEther(wei *big.Int) *big.Float {
 	return new(big.Float).Quo(new(big.Float).SetInt(wei), big.NewFloat(params.Ether))
 }
 

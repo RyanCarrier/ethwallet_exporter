@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,13 +16,13 @@ import (
 
 var (
 	addressList     []Address = make([]Address, 0)
-	balanceList     []Balance
 	tokenList       []TokenData
 	port            string = "8084"
 	url             string = "http://localhost:8545"
 	lastRefresh     time.Duration
 	client          *ethclient.Client
 	refreshDuration time.Duration = time.Second * 15
+	cacheTicks      int           = 0
 )
 
 func init() {
@@ -30,12 +31,14 @@ func init() {
 	duration := os.Getenv("DURATION")
 	urlCustom := os.Getenv("GETH")
 	addresses := os.Getenv("ADDRESSES")
+	cache := os.Getenv("CACHE")
 	if len(portCustom) != 0 {
 		port = portCustom
 	}
 	if len(duration) != 0 {
 		refreshDuration, err = time.ParseDuration(duration)
 		if err != nil {
+			fmt.Println("failed to parse duration")
 			panic(err)
 		}
 	}
@@ -44,7 +47,15 @@ func init() {
 		url = urlCustom
 	}
 	if len(addresses) == 0 {
+		fmt.Println("no addresses supplied")
 		panic("no addresses supplied")
+	}
+	if len(cache) != 0 {
+		cacheTicks, err = strconv.Atoi(cache)
+		if err != nil || cacheTicks < 0 {
+			fmt.Println("failed to parse cache ticks (should be positive int)")
+			panic(err)
+		}
 	}
 	client, err = ethclient.Dial(url)
 	if err != nil {
@@ -83,8 +94,10 @@ func main() {
 
 func handleMetrics(w http.ResponseWriter, r *http.Request) {
 	var resp []string
-	for _, v := range balanceList {
-		resp = append(resp, fmt.Sprintf("crypto_balance{name=\"%s\",address=\"%s\",symbol=\"%s\"} %v", v.name, v.address, v.symbol, v.balance))
+	for _, v := range addressList {
+		for _, b := range v.balances {
+			resp = append(resp, fmt.Sprintf("crypto_balance{name=\"%s\",address=\"%s\",symbol=\"%s\"} %v", v.name, v.address, b.symbol, b.balance))
+		}
 	}
 	resp = append(resp, fmt.Sprintf("crypto_load_seconds %0.2f", lastRefresh.Seconds()))
 	fmt.Fprintln(w, strings.Join(resp, "\n"))
