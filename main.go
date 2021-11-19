@@ -87,7 +87,6 @@ func init() {
 
 func main() {
 	go walletLoop()
-	time.Tick(refreshDuration)
 	http.HandleFunc("/metrics", handleMetrics)
 	panic(http.ListenAndServe("0.0.0.0:"+port, nil))
 }
