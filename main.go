@@ -22,7 +22,7 @@ var (
 	lastRefresh     time.Duration
 	client          *ethclient.Client
 	refreshDuration time.Duration = time.Second * 15
-	cacheTicks      int           = 0
+	cacheTicks      int           = 4
 )
 
 func init() {
