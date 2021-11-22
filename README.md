@@ -12,6 +12,10 @@ Ethereum and token balance exporter for prometheus
 
 ## TODO
 
-docker
+test docker
+
+change to flags instead of env
 
 better readme (unlikely)
+
+
