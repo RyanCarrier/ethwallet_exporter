@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -34,7 +33,8 @@ type Balance struct {
 }
 
 func walletLoop() {
-	i := cacheTicks
+	var i uint = 0
+	refreshAllTokens()
 	for range time.Tick(refreshDuration) {
 		if i >= cacheTicks {
 			refreshAllTokens()
@@ -109,13 +109,13 @@ func weiToEther(wei *big.Int) *big.Float {
 	return new(big.Float).Quo(new(big.Float).SetInt(wei), big.NewFloat(params.Ether))
 }
 
-func parseAddresses(a string) []Address {
+func parseAddresses(addressSlice []string) []Address {
 	addresses := []Address{}
 	var name string
 	var address common.Address
 	var err error
 
-	for _, v := range strings.Split(a, ",") {
+	for _, v := range addressSlice {
 		if common.IsHexAddress(v) {
 			address = common.HexToAddress(v)
 			name, err = ens.ReverseResolve(client, address)
