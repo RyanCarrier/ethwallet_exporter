@@ -50,16 +50,16 @@ func init() {
 	tokenlisturl := "https://raw.githubusercontent.com/Uniswap/default-token-list/main/src/tokens/mainnet.json"
 	resp, err := http.Get(tokenlisturl)
 	if err != nil {
-		log.Errorf("Could not get token list: %s\n", err)
+		log.Errorf("Could not get token list: %s", err)
 	}
 	tokenListData, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	if err != nil {
-		log.Error("Err: error reading body of response, ", err)
+		log.Error("Err: error reading body of response", err)
 	}
 	json.Unmarshal(tokenListData, &tokenList)
 	if err != nil {
-		log.Error("Err: Decoding tokenlist, ", err)
+		log.Error("Err: Decoding tokenlist", err)
 	}
 	for i := range tokenList {
 		tokenList[i].realAddress = common.HexToAddress(tokenList[i].Address)

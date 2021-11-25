@@ -61,7 +61,7 @@ func refreshKnownBalances() {
 		total += len(v.balances)
 	}
 	lastRefresh = time.Since(start)
-	log.Infof("Refreshed %d addresses (%d balances) (%s)\n", len(addressList), total, lastRefresh)
+	log.Infof("Refreshed %d addresses (%d balances) (%s)", len(addressList), total, lastRefresh)
 }
 
 func refreshAllTokens() {
@@ -76,13 +76,13 @@ func refreshAllTokens() {
 		}
 	}
 	lastRefresh = time.Since(start)
-	log.Infof("Refreshed %d addresses and scanned for %d tokens (%s)\n", len(addressList), len(tokenList), lastRefresh)
+	log.Infof("Refreshed %d addresses and scanned for %d tokens (%s)", len(addressList), len(tokenList), lastRefresh)
 }
 
 func getEthBalance(address common.Address) *big.Float {
 	balance, err := client.BalanceAt(context.Background(), address, nil)
 	if err != nil {
-		log.Errorf("Error fetching balance (%v)\n", address)
+		log.Errorf("Error fetching balance (%v)", address)
 	}
 	return weiToEther(balance)
 }
@@ -121,21 +121,21 @@ func parseAddresses(addressSlice []string) []Address {
 			address = common.HexToAddress(v)
 			name, err = ens.ReverseResolve(client, address)
 			if err == nil {
-				log.Infof("Found ENS (%s) for address (%s)\n", name, address)
+				log.Infof("Found ENS (%s) for address (%s)", name, address)
 			} else {
 				name = v
 			}
 		} else {
-			log.Infof("'%s' does not appear to be hex address attempting to resolve...\n", v)
+			log.Infof("'%s' does not appear to be hex address attempting to resolve...", v)
 			name = v
 			address, err = ens.Resolve(client, v)
 			//this might be weird cause many address potentially? for doge btc etc
 			if err != nil {
 				log.Error("ERROR: getting from ENS", err.Error())
-				log.Errorf("ERR: Address (%s) not a hex address or ENS domain\n", v)
+				log.Errorf("ERR: Address (%s) not a hex address or ENS domain", v)
 				continue
 			}
-			log.Infof("Name (%s) successfully resolved to address (%s)\n", v, address)
+			log.Infof("Name (%s) successfully resolved to address (%s)", v, address)
 		}
 		addresses = append(addresses, Address{name: name, address: address})
 	}
