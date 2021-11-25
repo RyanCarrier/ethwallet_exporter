@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 
+	log "github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 )
 
@@ -36,8 +37,7 @@ func init() {
 	flag.UintVar(&cacheTicks, "cache", 4, "Sets amount of balance refreshes (of previously known balances) before re-scanning all potential tokens, set to 0 to always scan every token (slower)")
 	flag.Parse()
 	if len(addresses) == 0 {
-		fmt.Println("no addresses supplied")
-		panic("no addresses supplied")
+		log.Panic("no addresses supplied")
 	}
 	client, err = ethclient.Dial(url)
 	if err != nil {
@@ -50,16 +50,16 @@ func init() {
 	tokenlisturl := "https://raw.githubusercontent.com/Uniswap/default-token-list/main/src/tokens/mainnet.json"
 	resp, err := http.Get(tokenlisturl)
 	if err != nil {
-		fmt.Printf("Could not get token list: %s\n", err)
+		log.Errorf("Could not get token list: %s\n", err)
 	}
 	tokenListData, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	if err != nil {
-		fmt.Println("Err: error reading body of response, ", err)
+		log.Error("Err: error reading body of response, ", err)
 	}
 	json.Unmarshal(tokenListData, &tokenList)
 	if err != nil {
-		fmt.Println("Err: Decoding tokenlist, ", err)
+		log.Error("Err: Decoding tokenlist, ", err)
 	}
 	for i := range tokenList {
 		tokenList[i].realAddress = common.HexToAddress(tokenList[i].Address)
@@ -77,6 +77,9 @@ func handleMetrics(w http.ResponseWriter, r *http.Request) {
 	var resp []string
 	for _, v := range addressList {
 		for _, b := range v.balances {
+			if b.balance == "" {
+				b.balance = "0"
+			}
 			resp = append(resp, fmt.Sprintf("crypto_balance{name=\"%s\",address=\"%s\",symbol=\"%s\"} %v", v.name, v.address, b.symbol, b.balance))
 		}
 	}
