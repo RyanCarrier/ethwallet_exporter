@@ -66,6 +66,11 @@ func refreshKnownBalances() {
 
 func refreshAllTokens() {
 	start := time.Now()
+	if len(addressList) < len(rawAddresses) {
+		log.Warn("Address list doesn't appear fully loaded, redailing geth")
+		connectClient()
+		addressList = parseAddresses(rawAddresses)
+	}
 	for i, v := range addressList {
 		addressList[i].balances = []Balance{{symbol: "ETH", balance: getEthBalance(v.address).String()}}
 		for _, jv := range tokenList {
@@ -83,6 +88,9 @@ func getEthBalance(address common.Address) *big.Float {
 	balance, err := client.BalanceAt(context.Background(), address, nil)
 	if err != nil {
 		log.Errorf("Error fetching balance (%v)", address)
+		log.Info("Attempting to redail to geth...")
+		connectClient()
+		addressList = parseAddresses(rawAddresses)
 	}
 	return weiToEther(balance)
 }

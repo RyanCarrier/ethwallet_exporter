@@ -17,6 +17,7 @@ import (
 )
 
 var (
+	rawAddresses    []string
 	addressList     []Address = make([]Address, 0)
 	tokenList       []TokenData
 	port            int
@@ -28,25 +29,35 @@ var (
 )
 
 func init() {
-	var err error
-	var addresses []string
 	flag.IntVar(&port, "port", 9887, "Port to listen for http requests")
 	flag.DurationVar(&refreshDuration, "duration", time.Second*15, "Duration between re-scanning for balance changes")
 	flag.StringVar(&url, "geth", "http://localhost:8545", "Path to geth RPC")
-	flag.StringSliceVar(&addresses, "addresses", []string{"vitalik.eth", "0xEA674fdDe714fd979de3EdF0F56AA9716B898ec8"}, "\"address1.eth,0xDEADBEEF\"")
+	flag.StringSliceVar(&rawAddresses, "addresses", []string{"vitalik.eth", "0xEA674fdDe714fd979de3EdF0F56AA9716B898ec8"}, "\"address1.eth,0xDEADBEEF\"")
 	flag.UintVar(&cacheTicks, "cache", 4, "Sets amount of balance refreshes (of previously known balances) before re-scanning all potential tokens, set to 0 to always scan every token (slower)")
 	flag.Parse()
-	if len(addresses) == 0 {
+	if len(rawAddresses) == 0 {
 		log.Panic("no addresses supplied")
 	}
+	importTokenList()
+	connectClient()
+	addressList = parseAddresses(rawAddresses)
+}
+
+func main() {
+	go walletLoop()
+	http.HandleFunc("/metrics", handleMetrics)
+	panic(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(port), nil))
+}
+
+func connectClient() {
+	var err error
 	client, err = ethclient.Dial(url)
 	if err != nil {
 		panic(err)
 	}
-	addressList = parseAddresses(addresses)
 }
 
-func init() {
+func importTokenList() {
 	tokenlisturl := "https://raw.githubusercontent.com/Uniswap/default-token-list/main/src/tokens/mainnet.json"
 	resp, err := http.Get(tokenlisturl)
 	if err != nil {
@@ -64,15 +75,7 @@ func init() {
 	for i := range tokenList {
 		tokenList[i].realAddress = common.HexToAddress(tokenList[i].Address)
 	}
-
 }
-
-func main() {
-	go walletLoop()
-	http.HandleFunc("/metrics", handleMetrics)
-	panic(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(port), nil))
-}
-
 func handleMetrics(w http.ResponseWriter, r *http.Request) {
 	var resp []string
 	for _, v := range addressList {
