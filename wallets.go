@@ -103,7 +103,7 @@ func getTokenBalance(token TokenData, address common.Address) *big.Float {
 	}
 	balance, err := caller.BalanceOf(nil, address)
 	if err != nil {
-		log.Errorf("Err on token address: ", token.realAddress)
+		log.Error("Err on token address: ", token.realAddress)
 		return big.NewFloat(0)
 	}
 	return intToDec(balance, token.Decimals)
