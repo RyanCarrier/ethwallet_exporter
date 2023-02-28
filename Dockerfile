@@ -1,4 +1,4 @@
-FROM golang:1.17.3-alpine as build
+FROM golang:1.20.1-alpine3.17 as build
 
 RUN apk add build-base
 
@@ -13,7 +13,7 @@ COPY *.go ./
 
 RUN go build -o /ethwallet_exporter
 
-FROM alpine:3.15
+FROM alpine:3.17
 
 COPY --from=build /ethwallet_exporter /
 
