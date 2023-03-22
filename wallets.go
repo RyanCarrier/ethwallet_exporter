@@ -12,27 +12,32 @@ import (
 	ens "github.com/wealdtech/go-ens/v3"
 )
 
+// TokenData keeps track of information one a specific token
 type TokenData struct {
 	Name        string `json:"name"`
 	Address     string `json:"address"`
 	realAddress common.Address
 	Symbol      string `json:"symbol"`
 	Decimals    uint8  `json:"decimals"`
-	ChainId     uint8  `json:"chainId"`
+	ChainID     uint8  `json:"chainId"`
 	LogoURI     string `json:"logoURI"`
 }
+
+// Address holds information of token balances of a wallet(address)
 type Address struct {
 	name     string
 	address  common.Address
 	balances []Balance
 }
 
+// Balance specifies the balance/amount of a token
 type Balance struct {
 	balance string
 	token   TokenData
 	symbol  string
 }
 
+// walletLoop runs every tick, scanning all tokens to check for every cacheTicks, and refreshes known balances every tick
 func walletLoop() {
 	var i uint = 0
 	refreshAllTokens()
@@ -64,6 +69,7 @@ func refreshKnownBalances() {
 	log.Infof("Refreshed %d addresses (%d balances) (%s)", len(addressList), total, lastRefresh)
 }
 
+// RefreshAllTokens checks all available tokens for non-zero balances
 func refreshAllTokens() {
 	start := time.Now()
 	if len(addressList) < len(rawAddresses) {
@@ -118,6 +124,7 @@ func weiToEther(wei *big.Int) *big.Float {
 	return new(big.Float).Quo(new(big.Float).SetInt(wei), big.NewFloat(params.Ether))
 }
 
+// parseAddresses converts address strings into Address structs, so we can handle hex wallets and ENS domains
 func parseAddresses(addressSlice []string) []Address {
 	addresses := []Address{}
 	var name string

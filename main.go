@@ -57,6 +57,7 @@ func connectClient() {
 	}
 }
 
+// importTokenList pulls down known possible tokens (uses uniswaps, there could be more but this is pretty much all)
 func importTokenList() {
 	tokenlisturl := "https://raw.githubusercontent.com/Uniswap/default-token-list/main/src/tokens/mainnet.json"
 	resp, err := http.Get(tokenlisturl)
@@ -76,6 +77,8 @@ func importTokenList() {
 		tokenList[i].realAddress = common.HexToAddress(tokenList[i].Address)
 	}
 }
+
+// handleMetrics is for the prometheus exporter, handling their requests
 func handleMetrics(w http.ResponseWriter, r *http.Request) {
 	var resp []string
 	for _, v := range addressList {
